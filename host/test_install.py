@@ -23,6 +23,7 @@ class InstallTests(unittest.TestCase):
             manage.atomic(path,manage.json_bytes(original))
             agents=['codex','claude','opencode','cline']
             manage.install(root,home,agents,Path(sys.executable))
+            self.assertTrue(manage.read_object(root/'.local/config.json')['cline_desktop'])
             first=path.read_bytes()
             manage.install(root,home,agents,Path(sys.executable))
             self.assertEqual(first,path.read_bytes())
@@ -30,6 +31,7 @@ class InstallTests(unittest.TestCase):
             data['hooks']['Stop'].append({'hooks':[{'type':'command','command':'added-later'}]})
             manage.atomic(path,manage.json_bytes(data))
             manage.uninstall(root)
+            self.assertFalse(manage.read_object(root/'.local/config.json')['cline_desktop'])
             after=manage.read_object(path)
             self.assertTrue(after['newPreference']);self.assertEqual(after['theme'],'dark')
             self.assertEqual(len(after['hooks']['Stop']),2)

@@ -6,7 +6,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 LOCAL = ROOT / '.local'
 CONFIG_PATH = Path(os.environ.get('AGENT_MATRIX_CONFIG', LOCAL / 'config.json'))
-VERSION = '0.1.0'
+VERSION = '0.1.1'
 
 
 def load_config():

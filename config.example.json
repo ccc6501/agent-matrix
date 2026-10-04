@@ -1,4 +1,5 @@
 {
   "serial_number": null,
-  "http_port": 8765
+  "http_port": 8765,
+  "cline_desktop": false
 }

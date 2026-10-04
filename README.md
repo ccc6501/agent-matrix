@@ -5,14 +5,14 @@ and who has finished—on a small LED matrix beside your keyboard.
 
 ![Four agent borders and status symbols](docs/agent-matrix.svg)
 
-**v0.1.0 preview · Windows · Waveshare ESP32-S3-Matrix · MIT**
+**v0.1.1 preview · Windows · Waveshare ESP32-S3-Matrix · MIT**
 
 | Agent | Border | Integration status |
 |---|---|---|
 | Codex | Blue | Native hooks; observed on the original installation |
 | Claude Code | Orange | Native hooks; observed on the original installation |
-| OpenCode | White | Experimental local plugin; simulated events tested |
-| Cline desktop / SDK | Purple | Experimental local plugin; simulated events tested |
+| OpenCode | White | Local plugin; owner confirmed the live test |
+| Cline desktop / SDK | Purple | Desktop fallback confirmed live; SDK plugin experimental |
 
 The center shows a spinner for work, a blinking yellow `!` for input, a green
 check for success, a red `X` for errors, or a dim dash for idle. Active agents
@@ -59,7 +59,7 @@ The illustrations are rendered previews, not photographs of the hardware.
    locally. It preserves an existing `board_config.py` for calibrated colors.
 5. Restart the selected agent apps. In Codex, review and trust the newly installed
    hooks through its native hook review UI. Setup does not approve hooks for you.
-   Start a fresh Cline session so it can discover the plugin.
+   Start the bridge before sending the next Cline prompt.
 6. Double-click **Agent Matrix** on the desktop. Choose **Run display demo** to
    check all four borders, then stop the demo to return to live status.
 
@@ -112,9 +112,13 @@ sessions; confirmed local process exits also clear Claude/OpenCode/Cline session
 OpenCode/Cline adapter heartbeat loss clears a session in about 20–22 seconds.
 Without an end signal, Codex falls back to status expiry. No sessions means off.
 
-Cline permission waiting is inferred from a tool waiting more than 750 ms before
-execution. Another slow pre-tool hook can briefly look like a permission wait.
-Real OpenCode/Cline chats, physical cable removal/reconnection, and setup on a
+Cline's SDK plugin infers permission waiting from a tool waiting more than 750 ms
+before execution. The desktop fallback reads explicit question and approval events
+from Cline's local status database when its plugin loader is unavailable. Start
+the bridge before sending the next Cline prompt. The fallback uses an internal
+database schema and remains experimental. The owner confirmed live working,
+question, and completion tests for both OpenCode and Cline Desktop. Additional
+approval/error/cancellation checks, cable removal/reconnection, and setup on a
 second PC remain on the [manual validation checklist](docs/testing.md).
 
 The bridge listens only on loopback. It receives session identifiers, status,

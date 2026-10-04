@@ -130,7 +130,7 @@ def install(root, home, agents, python, serial_number=None, http_port=8765, code
         if previous.get('agents') == agents and previous.get('python') == str(python):
             config_path = root / '.local/config.json'
             config = read_object(config_path)
-            config.update(serial_number=serial_number, http_port=http_port, python=str(python))
+            config.update(serial_number=serial_number, http_port=http_port, python=str(python), cline_desktop='cline' in agents)
             atomic(config_path, json_bytes(config))
             print('Already installed. Run doctor to check it, or uninstall before changing agents.')
             return previous
@@ -138,7 +138,7 @@ def install(root, home, agents, python, serial_number=None, http_port=8765, code
     changes, hooks, files = integration_plan(root, home, agents, python, codex_home, opencode_home)
     config_path = root / '.local/config.json'
     config = read_object(config_path)
-    config.update(serial_number=serial_number, http_port=http_port, python=str(python))
+    config.update(serial_number=serial_number, http_port=http_port, python=str(python), cline_desktop='cline' in agents)
     changes[config_path] = json_bytes(config)
     manifest = {'agents':agents, 'python':str(python), 'hooks':hooks, 'files':files}
     commit_plan(root, changes, manifest)
@@ -174,6 +174,10 @@ def uninstall(root):
             target.unlink()
         elif target.exists():
             print('Modified file preserved:', target)
+    config_path = root / '.local/config.json'
+    config = read_object(config_path)
+    config['cline_desktop'] = False
+    atomic(config_path, json_bytes(config))
     path.replace(path.with_name('last-uninstall.json'))
     print('Removed matching integrations. Local config, backups, and source files retained.')
 

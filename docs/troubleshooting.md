@@ -15,6 +15,7 @@ Run `.venv\Scripts\python.exe tools\doctor.py` first.
 | Color channels swapped | Test orange and green using the demo. Change `PIXEL_ORDER` between `RGB` and `GRB` in CIRCUITPY's `board_config.py`; tested hardware requires RGB. |
 | Symbols sideways | Use Rotate to find the orientation, then save ROTATION in `board_config.py`. |
 | Cline briefly says needs input before a tool | Its permission indicator is inferred; a slow pre-tool hook can trigger it. |
+| Cline Desktop stays off | Start the bridge before a new prompt. Setup with Cline selected enables the read-only desktop fallback; older installations need setup rerun and a bridge restart. The tested internal DB format is from desktop 0.0.32. |
 
 The browser mirror is an approximation of the board's animation phase and
 brightness, not a camera feed. It goes dark when status data is unavailable.

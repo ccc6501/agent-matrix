@@ -27,6 +27,7 @@ from serial.tools import list_ports
 from runtime_config import CONFIG_PATH, VERSION, load_config
 from board_port import find_port
 from session_process import claude_owner, owner_alive, plugin_owner
+from cline_desktop import ClineDesktop
 
 ESPRESSIF_VID = 0x303A
 MATRIX_PID = 0x826E
@@ -400,6 +401,8 @@ def main():
             driver.wake.wait(POLL_S)
             driver.wake.clear()
 
+    if load_config().get('cline_desktop', False):
+        threading.Thread(target=ClineDesktop(sessions.update).run, daemon=True).start()
     threading.Thread(target=poller, daemon=True).start()
     print("Agent light bridge on http://localhost:{}/  (Ctrl+C to stop)".format(a.http))
     try:

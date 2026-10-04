@@ -16,6 +16,8 @@ agent version or replace testing a physical board.
 - Windows Codex hook wrapper preserves stdin and paths containing spaces, quotes,
   ampersands and dollar signs.
 - JavaScript adapter events and dashboard script/element consistency.
+- Cline desktop status events, overlapping approvals/questions, cancellation,
+  closure, read-only database access, unsupported schemas, and history suppression.
 
 GitHub Actions runs Python 3.12/3.13 on Windows. No hardware or model credentials
 are required by CI. Test fixtures use temporary homes; they do not alter real
@@ -25,6 +27,10 @@ For this first preview, **29 Python tests passed locally on Python 3.12**, along
 with both JavaScript checks and PowerShell parsing. The first hosted CI jobs did
 not start, so Python 3.13 and the hosted-runner environment are not yet verified.
 Workflow configuration is included for a later hosted run.
+
+The v0.1.1 Cline desktop fallback passes **36 Python tests locally**, including
+seven new database/event tests. JavaScript adapter tests also pass. The installed
+Cline Desktop 0.0.32 database was successfully opened with read-only status queries.
 
 ## Physical and native-agent checks
 
@@ -36,9 +42,11 @@ Workflow configuration is included for a later hosted run.
 | Serial heartbeat timeout/recovery and rotation | Passed on prototype |
 | Blue spinner, corrected orange border and green check | Visually confirmed by owner |
 | Native Codex and Claude hook events | Observed on original installation |
-| Native OpenCode work → question/approval → success/error/cancel | Pending |
-| Native Cline work → question/approval → success/error/cancel | Pending |
-| White and purple physical color appearance | Pending owner confirmation |
+| Native OpenCode work → question → success | Owner reported test passed |
+| Native OpenCode approval/error/cancel | Pending |
+| Native Cline Desktop work → question → success | Owner confirmed purple border, spinner, input symbol, and green check using the desktop fallback |
+| Native Cline approval/error/cancel | Automated coverage passed; native test pending |
+| White and purple physical color appearance | Owner reported successful OpenCode test and confirmed Cline retest |
 | Physical USB unplug/replug while running | Pending |
 | Fresh install on a second Windows PC | Pending |
 
