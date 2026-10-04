@@ -21,6 +21,11 @@ GitHub Actions runs Python 3.12/3.13 on Windows. No hardware or model credential
 are required by CI. Test fixtures use temporary homes; they do not alter real
 agent settings or submit prompts to models.
 
+For this first preview, **29 Python tests passed locally on Python 3.12**, along
+with both JavaScript checks and PowerShell parsing. The first hosted CI jobs did
+not start, so Python 3.13 and the hosted-runner environment are not yet verified.
+Workflow configuration is included for a later hosted run.
+
 ## Physical and native-agent checks
 
 | Check | Status |
