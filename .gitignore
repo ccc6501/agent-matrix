@@ -1,0 +1,13 @@
+.venv/
+.local/
+work/
+backup/
+__pycache__/
+*.py[cod]
+*.log
+.env
+.env.*
+host/board.json
+settings.toml
+*.uf2
+dist/

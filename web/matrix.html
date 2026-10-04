@@ -1,0 +1,105 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Agent Matrix</title>
+<style>
+:root{color-scheme:dark;--bg:#0b0e12;--panel:#12171e;--line:#26303c;--text:#e9eef5;--muted:#a5b1bf;--blue:#318cff;--orange:#ff8e41;--purple:#b428ff;--white:#fff}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--text);font:15px/1.5 system-ui,sans-serif}
+main{max-width:960px;margin:auto;padding:30px 20px}header{display:flex;justify-content:space-between;gap:16px;align-items:center;flex-wrap:wrap}
+h1{font-size:28px;margin:0}h2{font-size:17px;margin:0 0 12px;font-weight:500}p{margin:6px 0 16px}.muted{color:var(--muted)}
+#connection{padding:6px 12px;border:1px solid var(--line);border-radius:20px}#connection[data-live=true]{color:#64de94}
+#banner{color:#ffd18b;margin-top:18px}#error{color:#ff8f8f;min-height:24px}
+.stage{display:grid;grid-template-columns:minmax(220px,340px) minmax(200px,1fr);gap:40px;align-items:center;margin:28px 0}
+#matrix{display:grid;grid-template-columns:repeat(8,1fr);gap:7px;padding:12px;background:#121519;border:1px solid #303640;border-radius:12px;aspect-ratio:1;max-width:340px;width:100%}
+.pixel{aspect-ratio:1;border-radius:4px;background:#222832;position:relative;overflow:hidden}.pixel i{position:absolute;inset:0;opacity:0;border-radius:inherit}
+#shown{font-size:24px;line-height:1.2;margin-bottom:10px}.identities{display:flex;gap:22px;flex-wrap:wrap}.identity{display:flex;align-items:center;gap:8px}.identity i{width:10px;height:10px;border-radius:3px;background:var(--blue)}.identity.claude i{background:var(--orange)}.identity.opencode i{background:var(--white)}.identity.cline i{background:var(--purple)}
+.tools{display:flex;gap:10px;flex-wrap:wrap;margin:20px 0}button{font:inherit;font-size:13px;background:#1a222c;color:var(--text);border:1px solid #354456;border-radius:7px;padding:9px 12px;cursor:pointer}
+button:hover{background:#283547}button:focus-visible{outline:2px solid var(--blue);outline-offset:3px}button:disabled{opacity:.4;cursor:default}button[aria-pressed=true]{background:#293d53;border-color:#88afd4}
+.agents{display:grid;grid-template-columns:1fr 1fr;gap:18px}.agent{border-top:2px solid var(--blue);padding:18px 0}.agent.claude{border-color:var(--orange)}.agent.opencode{border-color:var(--white)}.agent.cline{border-color:var(--purple)}
+.agent-head{display:flex;justify-content:space-between;gap:10px}.hold{font-size:12px;color:#ffd18b;min-height:18px}.buttons{display:flex;gap:8px;flex-wrap:wrap}
+.sessions{list-style:none;padding:0;margin:12px 0;min-height:26px}.sessions li{padding:5px 0;display:flex;justify-content:space-between;gap:12px;font-size:13px}.sessions span{overflow-wrap:anywhere}
+#metadata{font:12px/1.8 ui-monospace,Consolas,monospace;color:var(--muted);border-top:1px solid var(--line);padding-top:18px;margin-top:16px}
+@media(max-width:640px){.stage{grid-template-columns:1fr;gap:20px}#matrix{margin:auto}.agents{grid-template-columns:1fr}}
+</style>
+</head>
+<body><main>
+<header><div><h1>Agent Matrix</h1><p class="muted">An agent at a glance.</p></div><div id="connection" role="status">Connecting…</div></header>
+<p id="banner" role="status"></p>
+<section class="stage" aria-label="Matrix display">
+  <div id="matrix" role="img" aria-label="Matrix state unknown"></div>
+  <div><div id="shown" aria-live="polite">Waiting for board</div><p id="detail" class="muted">Display state will appear here.</p>
+    <div class="identities"><span class="identity"><i></i>Codex · blue</span><span class="identity claude"><i></i>Claude · orange</span><span class="identity opencode"><i></i>OpenCode · white</span><span class="identity cline"><i></i>Cline · purple</span></div>
+    <div class="tools"><button id="demo">Run display demo</button><button id="rotate">Rotate 90°</button></div>
+    <p class="muted">Each agent gets three seconds. An agent needing input or reporting an error holds the display; multiple urgent agents alternate.</p>
+    <div id="error" role="alert"></div>
+  </div>
+</section>
+<section class="agents">
+<div class="agent codex"><div class="agent-head"><h2>Codex</h2><span id="state-codex"></span></div><div id="hold-codex" class="hold"></div><ul class="sessions" id="sessions-codex"></ul><div class="buttons" data-agent="codex"></div></div>
+<div class="agent claude"><div class="agent-head"><h2>Claude</h2><span id="state-claude"></span></div><div id="hold-claude" class="hold"></div><ul class="sessions" id="sessions-claude"></ul><div class="buttons" data-agent="claude"></div></div>
+<div class="agent opencode"><div class="agent-head"><h2>OpenCode</h2><span id="state-opencode"></span></div><div id="hold-opencode" class="hold"></div><ul class="sessions" id="sessions-opencode"></ul><div class="buttons" data-agent="opencode"></div></div>
+<div class="agent cline"><div class="agent-head"><h2>Cline</h2><span id="state-cline"></span></div><div id="hold-cline" class="hold"></div><ul class="sessions" id="sessions-cline"></ul><div class="buttons" data-agent="cline"></div></div>
+</section>
+<p class="muted">Manual states hold for 60 seconds, then live sessions take over.</p>
+<p class="muted">Success checks clear after 30 seconds. Ended sessions disappear; an agent with no sessions turns off.</p>
+<div id="metadata"></div>
+</main>
+<script>
+const $=id=>document.getElementById(id);
+const labels={working:'Working',needs_input:'Needs input',completed:'Completed',error:'Error',idle:'Idle',off:'Off',disconnected:'Disconnected'};
+const identities={codex:[0,90,255],claude:[255,100,0],opencode:[255,255,255],cline:[180,40,255]};
+const colors={working:[190,210,255],needs_input:[255,200,0],completed:[0,255,40],error:[255,0,0],idle:[45,45,45]};
+const glyphs={working:['001100','010010','100001','100001','010010','001100'],needs_input:['001100','001100','001100','001100','000000','001100'],completed:['000000','000001','000010','100100','011000','000000'],error:['100001','010010','001100','001100','010010','100001'],idle:['000000','000000','011110','000000','000000','000000']};
+const broken=['00100100','00100100','01111110','01000010','00000000','01000010','00111100','00011000'];
+const leds=Array.from({length:64},()=>{let cell=document.createElement('div');cell.className='pixel';let light=document.createElement('i');cell.append(light);$('matrix').append(cell);return light});
+let snap=null,up=false,busy=false,received=0;
+const reduced=matchMedia('(prefers-reduced-motion: reduce)').matches;
+const scale=(c,k)=>c.map(v=>v*k);
+function live(){return up&&snap?.board.connected&&performance.now()-received<2500}
+function pixel(x,y,c,rotation){for(let n=0;n<rotation/90;n++){[x,y]=[7-y,x]}const led=leds[y*8+x];const m=Math.max(...c);if(!m)return;led.style.background=`rgb(${c.map(v=>Math.round(v/m*255)).join(',')})`;led.style.opacity=Math.sqrt(m/255);}
+function animate(now){
+  leds.forEach(l=>l.style.opacity=0);
+  if(live()&&snap.display){
+    const d=snap.display,t=reduced?0:d.phase+(now-received)/1000,st=d.state,agent=d.agent,rot=d.rotation;
+    if(st==='disconnected'){
+      broken.forEach((row,y)=>[...row].forEach((v,x)=>{if(v==='1')pixel(x,y,scale([140,0,255],.65+.35*Math.cos(t*2)),rot)}));
+    }else if(st!=='off'&&identities[agent]&&glyphs[st]){
+      for(let y=0;y<8;y++)for(let x=0;x<8;x++)if(x===0||x===7||y===0||y===7)pixel(x,y,scale(identities[agent],st==='idle'?.2:.5),rot);
+      glyphs[st].forEach((row,y)=>[...row].forEach((v,x)=>{
+        if(v!=='1')return;let k=1;
+        if(st==='needs_input')k=(t%1)<.5?1:.12;
+        if(st==='working'){const tau=2*Math.PI,angle=(Math.atan2(y-2.5,x-2.5)+tau)%tau,delta=((t*4-angle)%tau+tau)%tau;k=.18+.82*Math.max(0,1-delta/2.8)}
+        pixel(x+1,y+1,scale(colors[st],k),rot);
+      }));
+    }
+  }
+  requestAnimationFrame(animate);
+}
+function render(){
+  const online=live(),d=snap?.display;
+  $('connection').textContent=online?`Connected · ${snap.board.port}`:up?'Board offline':'Bridge offline';$('connection').dataset.live=online;
+  $('banner').textContent=online?'':up?`Board not answering: ${snap?.board.error||'waiting for reply'}`:'Waiting for the local status bridge.';
+  const title=online&&d?`${d.agent==='link'?'USB link':d.agent==='none'?'Display':({codex:'Codex',claude:'Claude',opencode:'OpenCode',cline:'Cline'}[d.agent]||d.agent)} · ${labels[d.state]||d.state}`:'Display state unknown';
+  $('shown').textContent=title;$('matrix').setAttribute('aria-label',title);
+  $('detail').textContent=online&&d?(d.demo_s?`Display demo · ${d.demo_s}s remaining`:`Live status · ${Math.round(d.brightness*100)}% LED brightness`):'The mirror stays dark until the board responds.';
+  $('demo').textContent=d?.demo_s?'Stop demo':'Run display demo';
+  for(const a of ['codex','claude','opencode','cline']){
+    const st=online?snap.agents[a]:null;$('state-'+a).textContent=labels[st]||'Unknown';
+    const hold=snap?.manual_s?.[a]||0;$('hold-'+a).textContent=hold?`Manual override · ${hold}s remaining`:'';
+    const rows=up?snap?.sessions?.[a]||[]:[],list=$('sessions-'+a);list.replaceChildren();
+    if(!rows.length){const li=document.createElement('li');li.textContent='No live sessions';li.className='muted';list.append(li)}
+    for(const row of rows){const li=document.createElement('li'),name=document.createElement('span'),state=document.createElement('span');name.textContent=row.label;state.textContent=labels[row.state]||row.state;state.className='muted';li.append(name,state);list.append(li)}
+    document.querySelectorAll(`[data-agent="${a}"] button`).forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.state===st)));
+  }
+  document.querySelectorAll('button').forEach(b=>b.disabled=busy||!online);
+  $('metadata').textContent=online?`${snap.board.version} · Waveshare ESP32-S3-Matrix · rotation ${d.rotation}° · USB heartbeat active`:'USB display unavailable';
+}
+async function post(path,body){busy=true;render();$('error').textContent='';try{const r=await fetch(path,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)}),data=await r.json();if(!r.ok)throw Error(data.error||data.reply||'Request failed');if(data.board){snap=data;up=true;received=performance.now()}}catch(e){$('error').textContent=e.message}finally{busy=false;render()}}
+document.querySelectorAll('.buttons').forEach(box=>{for(const [state,label]of Object.entries(labels)){if(state==='disconnected')continue;const b=document.createElement('button');b.textContent=label;b.dataset.state=state;b.setAttribute('aria-label',`Set ${box.dataset.agent} to ${label}`);b.addEventListener('click',()=>post('/api/state',{agent:box.dataset.agent,state}));box.append(b)}});
+$('demo').addEventListener('click',()=>post('/api/display',{command:'demo',value:snap?.display?.demo_s?0:72}));
+$('rotate').addEventListener('click',()=>post('/api/display',{command:'rotate',value:((snap?.display?.rotation||0)+90)%360}));
+async function poll(){try{const r=await fetch('/api/status',{cache:'no-store'});if(!r.ok)throw Error('Status unavailable');snap=await r.json();up=true;received=performance.now()}catch(e){up=false}render();setTimeout(poll,250)}
+render();poll();requestAnimationFrame(animate);
+</script>
+</body></html>
